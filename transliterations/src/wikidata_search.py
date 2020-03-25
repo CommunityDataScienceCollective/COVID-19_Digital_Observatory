@@ -2,8 +2,9 @@
 from os import path
 from sys import stdout
 from wikidata_api_calls import search_wikidata, get_wikidata_api
+import csv
 
-class Wikidata_ResultSet(object):
+class Wikidata_ResultSet:
     def __init__(self):
         self.results = []
 
@@ -12,22 +13,18 @@ class Wikidata_ResultSet(object):
                                     for i, result in enumerate(results)])
 
     def to_csv(self, outfile=None):
-        
-        header = ','.join(['search_term', 'entityid', 'pageid', 'search_position','timestamp']) + '\n'
         if outfile is None:
             of = stdout
 
         else:
-            of = open(outfile,'w')
+            of = open(outfile,'w',newline='')
 
-        of.write(header)
-        for result in self.results:
-            of.write(result.to_csv())
-
-        of.close()
+        writer = csv.writer(of)
+        writer.writerow(Wikidata_Result.__slots__)
+        writer.writerows(map(Wikidata_Result.to_list, self.results))
 
 
-class Wikidata_Result(object):
+class Wikidata_Result:
     # store unique entities found in the search results, the position in the search result, and the date
     __slots__=['search_term','entityid','pageid','search_position','timestamp']
 
@@ -38,16 +35,16 @@ class Wikidata_Result(object):
 
         self.search_term = term.strip()
         self.entityid = search_result['title']
-        self.pageid = search_result['pageid']
-        self.search_position = position
+        self.pageid = int(search_result['pageid'])
+        self.search_position = int(position)
         self.timestamp = search_result['timestamp']
 
-    def to_csv(self):
-        return ','.join([self.search_term,
-                         self.entityid,
-                         str(self.pageid),
-                         str(self.search_position),
-                         str(self.timestamp)]) + '\n'
+    def to_list(self):
+        return [self.search_term,
+                self.entityid,
+                self.pageid,
+                self.search_position,
+                self.timestamp]
     
 def run_wikidata_searches(terms_file = '../data/input/base_terms.txt', outfile="../data/output/wikidata_search_results.csv"):
 
