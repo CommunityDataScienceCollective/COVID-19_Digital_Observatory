@@ -1,7 +1,7 @@
 # generate a list of wikidata entities related to keywords
 from os import path
 from sys import stdout
-from wikidata_api_calls import search_wikidata
+from wikidata_api_calls import search_wikidata, get_wikidata_api
 
 class Wikidata_ResultSet(object):
     def __init__(self):
@@ -13,7 +13,7 @@ class Wikidata_ResultSet(object):
 
     def to_csv(self, outfile=None):
         
-        header = ','.join(['search_term', 'entityid', 'pageid', 'search_position','timestamp'])
+        header = ','.join(['search_term', 'entityid', 'pageid', 'search_position','timestamp']) + '\n'
         if outfile is None:
             of = stdout
 

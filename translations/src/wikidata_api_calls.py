@@ -1,8 +1,8 @@
 # File defines functions for making api calls to find translations and transliterations for key terms.
 
 import mwapi
+import requests
 import sys
-sys.path.append("..")
 from defaults import user_agent
 
 def get_wikidata_api():
@@ -27,3 +27,7 @@ def search_wikidata(session, term, *args, **kwargs):
         raise mwapi.session.APIError(f"No results for query: {term}")
 
     return results
+
+def run_sparql_query(q):
+    results = requests.get("https://query.wikidata.org/bigdata/namespace/wdq/sparql?query={q}&format=json")
+    
