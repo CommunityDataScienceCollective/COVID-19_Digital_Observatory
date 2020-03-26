@@ -4,6 +4,3 @@ covid19
 sars-cov-2
 covid-19 pandemic
 sars-cov-2 pandemic
-face mask
-social distancing
-hand sanitizer
