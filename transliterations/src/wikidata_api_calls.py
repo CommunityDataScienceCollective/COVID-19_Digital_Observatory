@@ -29,7 +29,7 @@ def search_wikidata(session, term, *args, **kwargs):
     return results
 
 def run_sparql_query(q):
-    results = requests.get("https://query.wikidata.org/bigdata/namespace/wdq/sparql",params={"query":q,"format":"json"})
+    results = requests.get("https://query.wikidata.org/bigdata/namespace/wdq/sparql",params={"format":"json","query":q})
     time.sleep(2)
     return results
 
