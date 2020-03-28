@@ -1,0 +1,20 @@
+[
+  {
+    "project": "en.wikipedia",
+    "article": "2019\u201320_coronavirus_pandemic",
+    "granularity": "daily",
+    "timestamp": "2020032600",
+    "access": "all-access",
+    "agent": "all-agents",
+    "views": 1148284
+  },
+  {
+    "project": "en.wikipedia",
+    "article": "Coronavirus_disease_2019",
+    "granularity": "daily",
+    "timestamp": "2020032600",
+    "access": "all-access",
+    "agent": "all-agents",
+    "views": 292272
+  }
+]
