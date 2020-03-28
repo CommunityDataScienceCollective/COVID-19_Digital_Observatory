@@ -10,12 +10,6 @@
 ###############################################################################
 
 
-#1 Load up the list of article names
-
-#2 Repeatedly call the API with that list of names
-
-#3 Save results as a TSV
-
 import requests
 import argparse
 import json
@@ -55,6 +49,8 @@ def main():
 
 
     articleList = []
+#1 Load up the list of article names
+
     with open(articleFile, 'r') as infileHandle:
         #theInfile = csv.reader(infileHandle, quotechar='"')
         theInfile = csv.reader(infileHandle)
@@ -69,6 +65,8 @@ def main():
 
     i = 0 #iterator to deal with end of file
 
+#2 Repeatedly call the API with that list of names
+
     for a in articleList:
         a = a[0] #destringify
         i = i+1
@@ -80,6 +78,7 @@ def main():
             j.append(jd["items"][0])
             time.sleep(.1)
 
+#3 Save results as a JSON and TSV
 
     #all data in j now, make json file
     with open(j_Out, 'w') as j_outfile: 
