@@ -52,7 +52,6 @@ def main():
 #1 Load up the list of article names
 
     with open(articleFile, 'r') as infileHandle:
-        #theInfile = csv.reader(infileHandle, quotechar='"')
         theInfile = csv.reader(infileHandle)
         next(theInfile) #skip header
         for currentLine in theInfile:
