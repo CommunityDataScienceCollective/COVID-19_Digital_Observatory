@@ -57,23 +57,23 @@ def main():
         next(infile) #skip header
         articleList = list(infile)
 
-        j = []
+    j = []
 
-        #2 Repeatedly call the API with that list of names
+    #2 Repeatedly call the API with that list of names
 
-        for a in articleList:
-            a = a.strip("\"\n") #destringify
-            url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}/{queryDate}"
+    for a in articleList:
+        a = a.strip("\"\n") #destringify
+        url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}/{queryDate}"
 
-            response = requests.get(url)
-            if response.ok:
-                jd = json.loads(response.content)
-                j.append(jd["items"][0])
-                time.sleep(.1)
-            else:
-                print(f"Not ok response: {response.status_code} from {url}")
-                
-        #3 Save results as a JSON and TSV
+        response = requests.get(url)
+        if response.ok:
+            jd = json.loads(response.content)
+            j.append(jd["items"][0])
+            time.sleep(.1)
+        else:
+            print(f"Not ok response: {response.status_code} from {url}")
+
+    #3 Save results as a JSON and TSV
 
     #all data in j now, make json file
     with open(j_Out, 'w') as j_outfile: 
