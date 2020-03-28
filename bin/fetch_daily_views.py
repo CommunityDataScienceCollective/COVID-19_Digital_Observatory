@@ -5,9 +5,7 @@
 # This script assumes the presence of the COVID-19 repo.
 # 
 # It (1) reads in the article list and then (2) calls the Wikimedia API to 
-# fetch view information for each article. Output is to a (3) JSON, TSV, and 
-# Feather file.
-#
+# fetch view information for each article. Output is to (3) JSON and TSV.
 #
 ###############################################################################
 
@@ -25,6 +23,7 @@ import csv
 import time
 import os.path
 import datetime
+#import feather
 
 
 
@@ -64,8 +63,9 @@ def main():
             articleList.append(currentLine)
 
     j_Out = outputPath + "dailyviews" + queryDate + ".json"
-    with open(j_Out, 'w') as outfile:
-        outfile.write("[")
+    t_Out = outputPath + "dailyviews" + queryDate + ".tsv"
+
+    j = []
 
     i = 0 #iterator to deal with end of file
 
@@ -74,34 +74,25 @@ def main():
         i = i+1
         url= "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/"
         url= url + a + "/daily/" + queryDate + "/" + queryDate #for now, single date at a time
-
-
         response = requests.get(url)
         if response.ok:
-
-            #do json entry
-            j=json.loads(response.content)
-            with open(j_Out, 'a') as j_outfile: 
-                json.dump(j, j_outfile)
-                if i < len(articleList):
-                    j_outfile.write(",\n")
-                else: #at end of file
-                    j_outfile.write("\n")
-
-            #do tsv entry
-            #with open(outputPath + "dailyviews" + queryDate + ".tsv", 'a') as t_outfile: 
-            #    dw = csv.DictWriter(t_outfile, sorted(j[0].keys()), delimiter='\t')
-            #    if i==1:
-            #        dw.writeheader()
-            #    dw.writerows(j)
-
+            jd = json.loads(response.content)
+            j.append(jd["items"][0])
             time.sleep(.1)
 
-    with open(j_Out, 'a') as j_outfile:
-        j_outfile.write("]")
 
-    #read the json back in and make a feather file?
+    #all data in j now, make json file
+    with open(j_Out, 'w') as j_outfile: 
+        json.dump(j, j_outfile, indent=2)
 
+    with open(t_Out, 'w') as t_outfile:
+        dw = csv.DictWriter(t_outfile, sorted(j[0].keys()), delimiter='\t')
+        dw.writeheader()
+        dw.writerows(j)
+
+
+    f_Out = outputPath + "dailyviews" + queryDate + ".feather"
+    #read the json back in and make a feather file? 
 
 
 if __name__ == "__main__":
