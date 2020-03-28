@@ -3,15 +3,23 @@
 ### 
 ### Minimal example analysis file using trending search data
 
-### Identify data source directory and file
-DataDir <- ("../data/output/")
-DataFile <- ("related_searches_top.csv")
-
 ### Import and cleanup data
-related.searches.top <- read.table(paste(DataDir,DataFile,
-                                 sep=""),
+
+DataURL <-
+    url("https://github.com/CommunityDataScienceCollective/COVID-19_Digital_Observatory/blob/master/transliterations/data/output/related_searches_top.csv")
+
+related.searches.top <- read.table(DataURL,
                            sep=",", header=TRUE,
                            stringsAsFactors=FALSE) 
+
+### Alternatively, uncomment and run if working locally with full git tree
+### Identify data source directory and file
+## DataDir <- ("../data/output/")
+## DataFile <- ("related_searches_top.csv")
+
+## related.searches.top <- read.table(paste(DataDir,DataFile, sep=""),
+##                                   sep=",", header=TRUE,
+##                                   stringsAsFactors=FALSE)
 
 ### Aggregate top 5 search queries by term/day
 top5.per.term.date <- aggregate(query ~ term + date,
