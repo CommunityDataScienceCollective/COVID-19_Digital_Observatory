@@ -1,1 +1,2 @@
 pytrends>=4.7.2
+mwapi>=0.5.1
