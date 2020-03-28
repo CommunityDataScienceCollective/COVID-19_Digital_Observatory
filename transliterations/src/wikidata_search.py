@@ -15,12 +15,15 @@ class Wikidata_ResultSet:
              for i, result in enumerate(results))
         )
 
-    def to_csv(self, outfile=None):
+    def to_csv(self, outfile=None, mode='w'):
         if outfile is None:
             of = stdout
 
         else:
-            of = open(outfile,'w',newline='')
+            if path.exists(outfile) and mode != 'w':
+                of = open(outfile,'a',newline='')
+            else:
+                of = open(outfile,'w',newline='')
         writer = csv.writer(of)
         writer.writerow(Wikidata_Result.__slots__)
         writer.writerows(map(Wikidata_Result.to_list, chain(* self.results)))
@@ -64,15 +67,15 @@ def read_google_trends_files(terms_files):
         yield row['query']
 
 
-def trawl_google_trends(terms_files, outfile = None):
+def trawl_google_trends(terms_files, outfile = None, mode='w'):
     terms = read_google_trends_files(terms_files)
     resultset = run_wikidata_searches(terms)
-    resultset.to_csv(outfile)
+    resultset.to_csv(outfile, mode)
 
-def trawl_base_terms(infiles, outfile = None):
+def trawl_base_terms(infiles, outfile = None, mode='w'):
     terms = chain(* (open(infile,'r') for infile in infiles))
     resultset = run_wikidata_searches(terms)
-    resultset.to_csv(outfile)
+    resultset.to_csv(outfile, mode)
 
     ## search each of the base terms in wikidata
 
@@ -84,6 +87,7 @@ if __name__ == "__main__":
     parser.add_argument('inputs', type=str, nargs='+', help='one or more files to read')
     parser.add_argument('--use-gtrends', action='store_true', help = 'toggle whether the input is the output from google trends')
     parser.add_argument('--output', type=str, help='an output file. defaults to stdout')
+    parser.add_argument('--overwrite', action='store_true', help = 'overwrite existing output files instead of appending')
     args = parser.parse_args()
     if args.use_gtrends:
         trawl_google_trends(args.inputs, args.output)
