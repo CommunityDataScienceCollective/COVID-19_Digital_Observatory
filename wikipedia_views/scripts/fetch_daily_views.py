@@ -55,7 +55,7 @@ def main():
 
     with open(articleFile, 'r') as infile:
         next(infile) #skip header
-        articleList = infile
+        articleList = list(infile)
 
         j = []
 
