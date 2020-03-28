@@ -23,7 +23,7 @@ def GetAllLabels(in_csvs, outfile, topNs):
 
     def load_entity_ids(in_csv, topN=5):
         with open(in_csv,'r',newline='') as infile:
-            reader = csv.DictReader(infile)
+            reader = list(csv.DictReader(infile))
             for row in reader:
                 if int(row['search_position']) < topN:
                     yield row["entityid"]

@@ -68,12 +68,12 @@ def read_google_trends_files(terms_files):
 
 
 def trawl_google_trends(terms_files, outfile = None, mode='w'):
-    terms = read_google_trends_files(terms_files)
+    terms = list(read_google_trends_files(terms_files))
     resultset = run_wikidata_searches(terms)
     resultset.to_csv(outfile, mode)
 
 def trawl_base_terms(infiles, outfile = None, mode='w'):
-    terms = chain(* (open(infile,'r') for infile in infiles))
+    terms = list(chain(* (open(infile,'r') for infile in infiles)))
     resultset = run_wikidata_searches(terms)
     resultset.to_csv(outfile, mode)
 
