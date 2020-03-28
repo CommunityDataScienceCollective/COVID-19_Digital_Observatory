@@ -20,7 +20,6 @@ import datetime
 #import feather
 
 
-
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Call the views API repeatedly.')
@@ -49,35 +48,32 @@ def main():
 
 
     articleList = []
-#1 Load up the list of article names
+    #1 Load up the list of article names
 
-    with open(articleFile, 'r') as infileHandle:
-        theInfile = csv.reader(infileHandle)
-        next(theInfile) #skip header
-        for currentLine in theInfile:
-            articleList.append(currentLine)
+    j_Out = f"{outputPath}dailyviews{queryDate}.json"
+    t_Out = f"{outputPath}dailyviews{queryDate}.tsv"
 
-    j_Out = outputPath + "dailyviews" + queryDate + ".json"
-    t_Out = outputPath + "dailyviews" + queryDate + ".tsv"
+    with open(articleFile, 'r') as infile:
+        next(infile) #skip header
+        articleList = list(infile)
 
     j = []
 
-    i = 0 #iterator to deal with end of file
-
-#2 Repeatedly call the API with that list of names
+    #2 Repeatedly call the API with that list of names
 
     for a in articleList:
-        a = a[0] #destringify
-        i = i+1
-        url= "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/"
-        url= url + a + "/daily/" + queryDate + "/" + queryDate #for now, single date at a time
+        a = a.strip("\"\n") #destringify
+        url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}/{queryDate}"
+
         response = requests.get(url)
         if response.ok:
             jd = json.loads(response.content)
             j.append(jd["items"][0])
             time.sleep(.1)
+        else:
+            print(f"Not ok response: {response.status_code} from {url}")
 
-#3 Save results as a JSON and TSV
+    #3 Save results as a JSON and TSV
 
     #all data in j now, make json file
     with open(j_Out, 'w') as j_outfile: 
@@ -89,8 +85,8 @@ def main():
         dw.writerows(j)
 
 
-    f_Out = outputPath + "dailyviews" + queryDate + ".feather"
-    #read the json back in and make a feather file? 
+    # f_Out = outputPath + "dailyviews" + queryDate + ".feather"
+    # read the json back in and make a feather file? 
 
 
 if __name__ == "__main__":
