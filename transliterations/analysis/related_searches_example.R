@@ -19,7 +19,7 @@ top5.per.term.date <- aggregate(query ~ term + date,
                                 head, 5)
 
 ## Might cleanup a bit for further analysis or visualization...
-top5.per.term.date$date <- asDate(top5.per.term.date$date)
+top5.per.term.date$date <- as.Date(top5.per.term.date$date)
 
 ### Export
 write.table(top5.per.term.date,
