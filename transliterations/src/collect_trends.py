@@ -18,7 +18,7 @@ def grouper(iterable, n, fillvalue=None):
 def get_daily_trends():
     trendReq = TrendReq(backoff_factor=0.2)
     today_trending = trendReq.today_searches()
-    daily_trends_outfile = path.join("..","data","output","daily_google_trends.csv")
+    daily_trends_outfile = path.join("..","output","daily_google_trends.csv")
 
     write_header = False
     header = ['date','term','top']
@@ -26,7 +26,7 @@ def get_daily_trends():
     if not path.exists(daily_trends_outfile):
         write_header = True
 
-    with open("../data/output/daily_google_trends.csv",'a',newline='') as of:
+    with open("../output/intermediate/daily_google_trends.csv",'a',newline='') as of:
         writer = csv.writer(of)
         if write_header:
             writer.writerow(header)
@@ -59,7 +59,7 @@ def get_related_queries(stems):
         df = pd.concat(out[k])
         df['date'] = str(datetime.now().date())
         out[k] = df
-        outfile = path.join('..','data','output',f"related_searches_{k}.csv")
+        outfile = path.join('..','output','intermediate',f"related_searches_{k}.csv")
         if path.exists(outfile):
             mode = 'a'
             header = False
@@ -69,7 +69,7 @@ def get_related_queries(stems):
 
         df.to_csv(outfile, mode=mode, header=header,index=False)
 
-stems = [t.strip() for t in open("../data/input/base_terms.txt",'r')]
+stems = [t.strip() for t in open("../resources/base_terms.txt",'r')]
 
 get_daily_trends()
 

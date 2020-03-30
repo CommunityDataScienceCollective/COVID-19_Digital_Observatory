@@ -2,6 +2,7 @@ from wikidata_api_calls import run_sparql_query
 from itertools import chain, islice
 import csv
 from json import JSONDecodeError
+from os import path
 
 class LabelData:
     __slots__ = ['entityid','label','langcode','is_alt']
@@ -84,6 +85,14 @@ def GetEntityLabels(entityids):
     return chain(*calls)
         
 
+def find_new_output_file(output, i = 1):
+    if path.exists(output):
+        name, ext = path.splitext(output)
+
+        return find_new_output_file(f"{name}_{i}.{ext}", i+1)
+    else:
+        return output
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser("Use wikidata to find transliterations of terms")
@@ -93,4 +102,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    GetAllLabels(args.inputs, args.output, topNs=args.topN)
+    output = find_new_output_file(args.output)
+
+    GetAllLabels(args.inputs, output, topNs=args.topN)
