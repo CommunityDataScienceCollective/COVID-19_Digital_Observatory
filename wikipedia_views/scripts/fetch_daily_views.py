@@ -79,7 +79,6 @@ def main():
     t_Out = f"{outputPath}dailyviews{queryDate}.tsv"
 
     with open(articleFile, 'r') as infile:
-        next(infile) #skip header
         articleList = list(infile)
 
     j = []
