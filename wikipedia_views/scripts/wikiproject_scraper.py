@@ -109,7 +109,6 @@ def main():
     #3 Saves the list to a file
 
     with open(outputFile, 'w') as f:
-        f.write("Article\n")
         f.write('\n'.join(articleNames)+'\n')
     logging.debug(f"Finished scrape and made a new article file at {datetime.datetime.now()}")
 
