@@ -1,4 +1,4 @@
-# generate a list of wikidata entities related to keywords
+# generate a list of wikidata items related to keywords
 from os import path
 from sys import stdout
 from wikidata_api_calls import search_wikidata, get_wikidata_api
@@ -30,8 +30,8 @@ class Wikidata_ResultSet:
 
 
 class Wikidata_Result:
-    # store unique entities found in the search results, the position in the search result, and the date
-    __slots__=['search_term','entityid','pageid','search_position','timestamp']
+    # store unique items found in the search results, the position in the search result, and the date
+    __slots__=['search_term','itemid','pageid','search_position','timestamp']
 
     def __init__(self,
                  term,
@@ -39,14 +39,14 @@ class Wikidata_Result:
                  position):
 
         self.search_term = term.strip()
-        self.entityid = search_result['title']
+        self.itemid = search_result['title']
         self.pageid = int(search_result['pageid'])
         self.search_position = int(position)
         self.timestamp = search_result['timestamp']
 
     def to_list(self):
         return [self.search_term,
-                self.entityid,
+                self.itemid,
                 self.pageid,
                 self.search_position,
                 self.timestamp]
@@ -79,11 +79,11 @@ def trawl_base_terms(infiles, outfile = None, mode='w'):
 
     ## search each of the base terms in wikidata
 
-    # store unique entities found in the search results, the position in the search result, and the date
+    # store unique items found in the search results, the position in the search result, and the date
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser("Search wikidata for entities related to a set of terms.")
+    parser = argparse.ArgumentParser("Search wikidata for items related to a set of terms.")
     parser.add_argument('inputs', type=str, nargs='+', help='one or more files to read')
     parser.add_argument('--use-gtrends', action='store_true', help = 'toggle whether the input is the output from google trends')
     parser.add_argument('--output', type=str, help='an output file. defaults to stdout')
