@@ -23,7 +23,6 @@ from csv import DictWriter
 #import feather #TBD
 
 def parse_args():
-
     parser = argparse.ArgumentParser(description='Call the views API to collect Wikipedia view data.')
     parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia/data", type=str)
     parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia/resources/enwp_wikiproject_covid19_articles.txt", type=str)
@@ -42,10 +41,10 @@ def main():
 
     #handle -d
     if args.query_date:
-        queryDate = args.query_date
+        query_date = args.query_date
     else:
         yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
-        queryDate = yesterday.strftime("%Y%m%d")
+        query_date = yesterday.strftime("%Y%m%d")
 
     #handle -L
     loglevel_mapping = { 'debug' : logging.DEBUG,
@@ -69,13 +68,14 @@ def main():
     export_git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
     export_git_short_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
     export_time = str(datetime.datetime.now())
+    export_date = datetime.datetime.today().strftime("%Y%m%d")
 
     logging.info(f"Starting run at {export_time}")
     logging.info(f"Last commit: {export_git_hash}")
 
     #1 Load up the list of article names
-    j_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{queryDate}.json")
-    t_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{queryDate}.tsv")
+    j_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{export_date}.json")
+    t_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{export_date}.tsv")
 
     with open(articleFile, 'r') as infile:
         articleList = list(infile)
@@ -90,7 +90,7 @@ def main():
         #2 Repeatedly call the API with that list of names
         for a in articleList:
             a = a.strip("\"\n") #destringify
-            url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}00/{queryDate}00"
+            url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{query_date}00/{query_date}00"
 
             response = requests.get(url)
             if response.ok:
@@ -115,7 +115,7 @@ def main():
             # write out of the csv file
             dw.writerow(jd)
 
-    # f_Out = outputPath + "dailyviews" + queryDate + ".feather"
+    # f_Out = outputPath + "dailyviews" + query_date + ".feather"
     # read the json back in and make a feather file? 
     logging.debug(f"Run complete at {datetime.datetime.now()}")
     logging.info(f"Processed {success} successful URLs and {failure} failures.")

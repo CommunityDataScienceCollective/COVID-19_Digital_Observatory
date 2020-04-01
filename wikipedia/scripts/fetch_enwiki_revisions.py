@@ -1,4 +1,4 @@
-#!yusr/bin/env python3
+#!/usr/bin/env python3
 
 ###############################################################################
 #
@@ -26,7 +26,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Call the views API to collect Wikipedia revision data.')
     parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia/data", type=str)
     parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia/resources/enwp_wikiproject_covid19_articles.txt", type=str)
-    parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format.', type=str)
     parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=str), 
     parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
     args = parser.parse_args()
@@ -37,12 +36,6 @@ def main():
 
     output_path = args.output_folder
     article_filename = args.article_file
-    #handle -d
-    if args.query_date:
-        query_date = args.query_date
-    else:
-        yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
-        query_date = yesterday.strftime("%Y%m%d")
 
     #handle -L
     loglevel_mapping = { 'debug' : logging.DEBUG,
@@ -66,12 +59,13 @@ def main():
     export_git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
     export_git_short_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
     export_time = str(datetime.datetime.now())
+    export_date = datetime.datetime.today().strftime("%Y%m%d")
 
     logging.info(f"Starting run at {export_time}")
     logging.info(f"Last commit: {export_git_hash}")
 
-    json_output_filename = os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{query_date}.json")
-    tsv_output_filename =  os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{query_date}.tsv")
+    json_output_filename = os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{export_date}.json")
+    tsv_output_filename =  os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{export_date}.tsv")
     
     api_session = api.Session("https://en.wikipedia.org/w/api.php")
 
