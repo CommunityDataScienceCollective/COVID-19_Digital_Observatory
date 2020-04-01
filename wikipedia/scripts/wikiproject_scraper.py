@@ -29,7 +29,7 @@ from bs4 import BeautifulSoup
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Get a list of pages tracked by the COVID-19 Wikiproject.')
-    parser.add_argument('-o', '--output_file', help='Where to save output', default="wikipedia_views/resources/enwp_wikiproject_covid19_articles.txt", type=str)
+    parser.add_argument('-o', '--output_file', help='Where to save output', default="wikipedia/resources/enwp_wikiproject_covid19_articles.txt", type=str)
     parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info'), 
     parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
     args = parser.parse_args()

@@ -24,8 +24,8 @@ from mw import api
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Call the views API to collect Wikipedia revision data.')
-    parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia_views/data", type=str)
-    parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia_views/resources/enwp_wikiproject_covid19_articles.txt", type=str)
+    parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia/data", type=str)
+    parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia/resources/enwp_wikiproject_covid19_articles.txt", type=str)
     parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format.', type=str)
     parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=str), 
     parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
