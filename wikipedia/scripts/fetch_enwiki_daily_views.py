@@ -10,16 +10,15 @@
 ###############################################################################
 
 import sys
-import subprocess
 import requests
 import argparse
 import json
 import time
 import os.path
-import argparse
 import datetime
 import logging
 from csv import DictWriter
+import digobs
 #import feather #TBD
 
 def parse_args():
@@ -47,17 +46,7 @@ def main():
         query_date = yesterday.strftime("%Y%m%d")
 
     #handle -L
-    loglevel_mapping = { 'debug' : logging.DEBUG,
-                         'info' : logging.INFO,
-                         'warning' : logging.WARNING,
-                         'error' : logging.ERROR,
-                         'critical' : logging.CRITICAL }
-
-    if args.logging_level in loglevel_mapping:
-        loglevel = loglevel_mapping[args.logging_level]
-    else:
-        print("Choose a valid log level: debug, info, warning, error, or critical") 
-        exit
+    loglevel = digobs.get_loglevel(args.logging_level)
 
     #handle -W
     if args.logging_destination:
@@ -65,20 +54,18 @@ def main():
     else:
         logging.basicConfig(level=loglevel)
 
-    export_git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
-    export_git_short_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
     export_time = str(datetime.datetime.now())
     export_date = datetime.datetime.today().strftime("%Y%m%d")
 
     logging.info(f"Starting run at {export_time}")
-    logging.info(f"Last commit: {export_git_hash}")
+    logging.info(f"Last commit: {digobs.git_hash()}")
 
     #1 Load up the list of article names
     j_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{export_date}.json")
     t_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{export_date}.tsv")
 
     with open(articleFile, 'r') as infile:
-        articleList = list(infile)
+        articleList = list(map(str.strip, infile))
 
     success = 0 #for logging how many work/fail
     failure = 0 
@@ -89,7 +76,6 @@ def main():
 
         #2 Repeatedly call the API with that list of names
         for a in articleList:
-            a = a.strip("\"\n") #destringify
             url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{query_date}00/{query_date}00"
 
             response = requests.get(url)

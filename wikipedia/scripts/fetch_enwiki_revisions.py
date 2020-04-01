@@ -13,12 +13,12 @@ import argparse
 import logging
 import os.path
 import json
-import subprocess
 import datetime
 
 from requests import Request
 from csv import DictWriter
 from mw import api
+import digobs
 
 
 def parse_args():
@@ -38,17 +38,7 @@ def main():
     article_filename = args.article_file
 
     #handle -L
-    loglevel_mapping = { 'debug' : logging.DEBUG,
-                         'info' : logging.INFO,
-                         'warning' : logging.WARNING,
-                         'error' : logging.ERROR,
-                         'critical' : logging.CRITICAL }
-
-    if args.logging_level in loglevel_mapping:
-        loglevel = loglevel_mapping[args.logging_level]
-    else:
-        print("Choose a valid log level: debug, info, warning, error, or critical") 
-        exit
+    loglevel = digobs.get_loglevel(args.logging_level)
 
     #handle -W
     if args.logging_destination:
@@ -56,13 +46,11 @@ def main():
     else:
         logging.basicConfig(level=loglevel)
 
-    export_git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
-    export_git_short_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
     export_time = str(datetime.datetime.now())
     export_date = datetime.datetime.today().strftime("%Y%m%d")
 
     logging.info(f"Starting run at {export_time}")
-    logging.info(f"Last commit: {export_git_hash}")
+    logging.info(f"Last commit: {digobs.git_hash()}")
 
     json_output_filename = os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{export_date}.json")
     tsv_output_filename =  os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{export_date}.tsv")
@@ -88,7 +76,7 @@ def main():
 
     # load the list of articles
     with open(article_filename, 'r') as infile:
-        article_list = [art.strip() for art in list(infile)]
+        article_list= list(map(str.strip, infile))
 
     def get_revisions_for_page(title):
         return api_session.revisions.query(properties=rv_props.values(),
@@ -104,7 +92,7 @@ def main():
     # add special export fields
     tsv_fields = tsv_fields + ['anon', 'minor', 'url', 'export_timestamp', 'export_commit']
 
-    export_info = { 'git_commit' : export_git_hash,
+    export_info = { 'git_commit' : digobs.git_hash(),
                     'timestamp' : export_time }
 
     with open(json_output_filename, 'w') as json_output, \
@@ -155,7 +143,7 @@ def main():
                                             'oldid' : rev['revid']}).prepare().url
 
                 rev['export_timestamp'] = export_time
-                rev['export_commit'] = export_git_short_hash
+                rev['export_commit'] = digobs.git_hash(short=True)
 
                 tsv_writer.writerow({k: rev[k] for k in tsv_fields})
 
