@@ -141,8 +141,6 @@ def main():
                 rev['export_commit'] = export_git_short_hash
 
                 tsv_writer.writerow({k: rev[k] for k in tsv_fields})
-            break
 
 if __name__ == "__main__":
-
     main()
