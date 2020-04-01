@@ -25,6 +25,7 @@ import logging
 import re
 import math
 from bs4 import BeautifulSoup
+import digobs
 
 def parse_args():
 
