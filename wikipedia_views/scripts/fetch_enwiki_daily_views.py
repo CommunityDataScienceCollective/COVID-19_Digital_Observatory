@@ -24,7 +24,7 @@ from csv import DictWriter
 
 def parse_args():
 
-    parser = argparse.ArgumentParser(description='Call the views API to collect data view data.')
+    parser = argparse.ArgumentParser(description='Call the views API to collect Wikipedia view data.')
     parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia_views/data", type=str)
     parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia_views/resources/enwp_wikiproject_covid19_articles.txt", type=str)
     parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format.', type=str)
