@@ -30,7 +30,7 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='Get a list of pages tracked by the COVID-19 Wikiproject.')
     parser.add_argument('-o', '--output_file', help='Where to save output', default="wikipedia/resources/enwp_wikiproject_covid19_articles.txt", type=str)
-    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info'), 
+    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=digobs.get_loglevel), 
     parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
     args = parser.parse_args()
 
@@ -41,24 +41,11 @@ def main():
     args = parse_args()
     outputFile = args.output_file
 
-    #handle -L
-    loglevel_mapping = { 'debug' : logging.DEBUG,
-                         'info' : logging.INFO,
-                         'warning' : logging.WARNING,
-                         'error' : logging.ERROR,
-                         'critical' : logging.CRITICAL }
-
-    if args.logging_level in loglevel_mapping:
-        loglevel = loglevel_mapping[args.logging_level]
-    else:
-        print("Choose a valid log level: debug, info, warning, error, or critical") 
-        exit
-        
     #handle -W
     if args.logging_destination:
-        logging.basicConfig(filename=args.logging_destination, filemode='a', level=loglevel)
+        logging.basicConfig(filename=args.logging_destination, filemode='a', level=args.logging_level)
     else:
-        logging.basicConfig(level=loglevel)
+        logging.basicConfig(level=args.logging_level)
 
     export_git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
     export_git_short_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()

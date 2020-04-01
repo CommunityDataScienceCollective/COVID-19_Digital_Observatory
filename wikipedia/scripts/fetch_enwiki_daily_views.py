@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia/data", type=str)
     parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia/resources/enwp_wikiproject_covid19_articles.txt", type=str)
     parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format.', type=str)
-    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=str), 
+    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=digobs.get_loglevel), 
     parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
     args = parser.parse_args()
     return(args)
@@ -45,14 +45,11 @@ def main():
         yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
         query_date = yesterday.strftime("%Y%m%d")
 
-    #handle -L
-    loglevel = digobs.get_loglevel(args.logging_level)
-
     #handle -W
     if args.logging_destination:
-        logging.basicConfig(filename=args.logging_destination, filemode='a', level=loglevel)
+        logging.basicConfig(filename=args.logging_destination, filemode='a', level=args.logging_level)
     else:
-        logging.basicConfig(level=loglevel)
+        logging.basicConfig(level=args.logging_level)
 
     export_time = str(datetime.datetime.now())
     export_date = datetime.datetime.today().strftime("%Y%m%d")
