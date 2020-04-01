@@ -80,10 +80,11 @@ def main():
                  'sha1' : 'sha1',
                  'contentmodel' : 'contentmodel',
                  'tags' : 'tags',
+                 'flags' : 'flags',
                  'comment' : 'comment',
                  'content' : 'content' }
 
-    exclude_from_tsv = ['tags', 'comment', 'content']
+    exclude_from_tsv = ['tags', 'comment', 'content', 'flags']
 
     # load the list of articles
     with open(article_filename, 'r') as infile:
@@ -101,7 +102,7 @@ def main():
     tsv_fields = [e for e in tsv_fields if e not in exclude_from_tsv]
 
     # add special export fields
-    tsv_fields = tsv_fields + ['url', 'export_timestamp', 'export_commit']
+    tsv_fields = tsv_fields + ['anon', 'minor', 'url', 'export_timestamp', 'export_commit']
 
     export_info = { 'git_commit' : export_git_hash,
                     'timestamp' : export_time }
@@ -126,6 +127,22 @@ def main():
                 # handle missing data
                 if "sha1" not in rev:
                     rev["sha1"] = ""
+
+                if "userhidden" in rev:
+                    rev["user"] = ""
+                    rev["userid"] = ""
+
+                # recode anon so it's true or false instead of present/missing
+                if "anon" in rev:
+                    rev["anon"] = True
+                else:
+                    rev["anon"] = False
+                    
+                # let's recode "minor" in the same way
+                if "minor" in rev:
+                    rev["minor"] = True
+                else:
+                    rev["minor"] = False
 
                 # add page title information
                 rev['title'] = rev['page']['title']
