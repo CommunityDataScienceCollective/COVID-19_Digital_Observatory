@@ -121,7 +121,7 @@ def main():
         tsv_writer.writeheader()
 
         for article in article_list:
-            logging.info(f"pulling revisiosn for: {article}")
+            logging.info(f"pulling revisions for: {article}")
             for rev in get_revisions_for_page(article):
                 logging.debug(f"processing raw revision: {rev}")
 
