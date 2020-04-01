@@ -18,6 +18,7 @@
 ###############################################################################
 
 import argparse
+import subprocess
 import requests
 import datetime
 import logging
@@ -28,48 +29,45 @@ from bs4 import BeautifulSoup
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Get a list of pages tracked by the COVID-19 Wikiproject.')
-    parser.add_argument('-o', '--output_folder', help='Where to save output', default="../resources/", type=str)
+    parser.add_argument('-o', '--output_file', help='Where to save output', default="wikipedia_views/resources/enwp_wikiproject_covid19_articles.txt", type=str)
     parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info'), 
-    parser.add_argument('-W', '--logging_destination', help='Logging destination.', default='../logs/') 
+    parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
     args = parser.parse_args()
 
     return(args)
 
-
 def main():
 
     args = parse_args()
-
-    outputPath = args.output_folder
-
-    #handle -W
-    today = datetime.datetime.today().strftime('%Y%m%d')
-    dest = args.logging_destination
-    logHome = f"{dest}scraping{today}"
+    outputFile = args.output_file
 
     #handle -L
-    loglevel = args.logging_level
-    if loglevel == 'debug':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.DEBUG)
-    elif loglevel == 'info':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.INFO)
-    elif loglevel == 'warning':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.WARNING)
-    elif loglevel == 'error':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.ERROR)
-    elif loglevel == 'critical':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.CRITICAL)
+    loglevel_mapping = { 'debug' : logging.DEBUG,
+                         'info' : logging.INFO,
+                         'warning' : logging.WARNING,
+                         'error' : logging.ERROR,
+                         'critical' : logging.CRITICAL }
+
+    if args.logging_level in loglevel_mapping:
+        loglevel = loglevel_mapping[args.logging_level]
     else:
-        print("Choose a valid log level: debug, info, warning, error, or critical")
+        print("Choose a valid log level: debug, info, warning, error, or critical") 
         exit
+        
+    #handle -W
+    if args.logging_destination:
+        logging.basicConfig(filename=args.logging_destination, filemode='a', level=loglevel)
+    else:
+        logging.basicConfig(level=loglevel)
 
+    export_git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
+    export_git_short_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
+    export_time = str(datetime.datetime.now())
 
-    outputFile = f"{outputPath}articles.txt"
-    logging.debug(f"Starting scrape at {datetime.datetime.now()} and destructively outputting article list to {outputFile}.")
+    logging.info(f"Starting at {export_time} and destructively outputting article list to {outputFile}.")
+    logging.info(f"Last commit: {export_git_hash}")
+
     #1 How many hits to the fcgi?
-
-    #make a session
-
     session = requests.Session()
 
     originalURL = "https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi?run=yes&projecta=COVID-19&namespace=&pagename=&quality=&importance=&score=&limit=1000&offset=1&sorta=Importance&sortb=Quality"

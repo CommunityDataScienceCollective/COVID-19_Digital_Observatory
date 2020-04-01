@@ -9,30 +9,29 @@
 #
 ###############################################################################
 
-
+import sys
+import subprocess
 import requests
 import argparse
 import json
-import csv
 import time
 import os.path
+import argparse
 import datetime
 import logging
+from csv import DictWriter
 #import feather #TBD
-
 
 def parse_args():
 
-    parser = argparse.ArgumentParser(description='Call the views API repeatedly.')
-    parser.add_argument('-o', '--output_folder', help='Where to save output', default="../data/", type=str)
-    parser.add_argument('-i', '--article_file', help='File listing article names', default="../resources/articles.txt", type=str)
-    parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format please.', type=str)
-    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info'), 
-    parser.add_argument('-W', '--logging_destination', help='Logging destination.', default='../logs/'), 
+    parser = argparse.ArgumentParser(description='Call the views API to collect data view data.')
+    parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia_views/data", type=str)
+    parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia_views/resources/enwp_wikiproject_covid19_articles.txt", type=str)
+    parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format.', type=str)
+    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=str), 
+    parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
     args = parser.parse_args()
-
     return(args)
-
 
 def main():
 
@@ -42,7 +41,7 @@ def main():
     articleFile = args.article_file
 
     #handle -d
-    if (args.query_date):
+    if args.query_date:
         queryDate = args.query_date
     else:
         yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
@@ -50,74 +49,78 @@ def main():
 
     queryDate = queryDate + "00" #requires specifying hours
 
-    #handle -W
-    logHome = f"{args.logging_destination}dailylogrun{datetime.datetime.today().strftime('%Y%m%d')}"
-
     #handle -L
-    loglevel = args.logging_level
-    if loglevel == 'debug':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.DEBUG)
-    elif loglevel == 'info':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.INFO)
-    elif loglevel == 'warning':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.WARNING)
-    elif loglevel == 'error':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.ERROR)
-    elif loglevel == 'critical':
-        logging.basicConfig(filename=logHome, filemode='a', level=logging.CRITICAL)
-    else: 
+    loglevel_mapping = { 'debug' : logging.DEBUG,
+                         'info' : logging.INFO,
+                         'warning' : logging.WARNING,
+                         'error' : logging.ERROR,
+                         'critical' : logging.CRITICAL }
+
+    if args.logging_level in loglevel_mapping:
+        loglevel = loglevel_mapping[args.logging_level]
+    else:
         print("Choose a valid log level: debug, info, warning, error, or critical") 
         exit
 
+    #handle -W
+    if args.logging_destination:
+        logging.basicConfig(filename=args.logging_destination, filemode='a', level=loglevel)
+    else:
+        logging.basicConfig(level=loglevel)
 
-    articleList = []
-    logging.debug(f"Starting run at {datetime.datetime.now()}")
+    export_git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
+    export_git_short_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
+    export_time = str(datetime.datetime.now())
+
+    logging.info(f"Starting run at {export_time}")
+    logging.info(f"Last commit: {export_git_hash}")
 
     #1 Load up the list of article names
-
-    j_Out = f"{outputPath}dailyviews{queryDate}.json"
-    t_Out = f"{outputPath}dailyviews{queryDate}.tsv"
+    j_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{queryDate}.json")
+    t_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{queryDate}.tsv")
 
     with open(articleFile, 'r') as infile:
         articleList = list(infile)
 
-    j = []
     success = 0 #for logging how many work/fail
     failure = 0 
 
-    #2 Repeatedly call the API with that list of names
-
-    for a in articleList:
-        a = a.strip("\"\n") #destringify
-        url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}/{queryDate}"
-
-        response = requests.get(url)
-        if response.ok:
-            jd = json.loads(response.content)
-            j.append(jd["items"][0])
-            time.sleep(.1)
-            success = success + 1
-        else:
-            failure = failure + 1
-            logging.warning(f"Failure: {response.status_code} from {url}")
-
     #3 Save results as a JSON and TSV
+    with open(j_outfilename, 'w') as j_outfile, \
+         open(t_outfilename, 'w') as t_outfile:
 
-    #all data in j now, make json file
-    logging.info(f"Processed {success} successful URLs and {failure} failures.")
+        #2 Repeatedly call the API with that list of names
+        for a in articleList:
+            a = a.strip("\"\n") #destringify
+            url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}/{queryDate}"
 
-    with open(j_Out, 'w') as j_outfile: 
-        json.dump(j, j_outfile, indent=2)
+            response = requests.get(url)
+            if response.ok:
+                jd = response.json()["items"][0]
+                success = success + 1
+            else:
+                failure = failure + 1
+                logging.warning(f"Failure: {response.status_code} from {url}")
 
-    with open(t_Out, 'w') as t_outfile:
-        dw = csv.DictWriter(t_outfile, sorted(j[0].keys()), delimiter='\t')
-        dw.writeheader()
-        dw.writerows(j)
+            # start writing the CSV File if it doesn't exist yet
+            try:
+                dw
+            except NameError:
+                dw = DictWriter(t_outfile, sorted(jd.keys()), delimiter='\t')
+                dw.writeheader()
 
-    logging.debug(f"Run complete at {datetime.datetime.now()}")
+            logging.debug(f"printing data: {jd}")
+
+            # write out the line of the json file
+            print(json.dumps(jd), file=j_outfile)
+
+            # write out of the csv file
+            dw.writerow(jd)
 
     # f_Out = outputPath + "dailyviews" + queryDate + ".feather"
     # read the json back in and make a feather file? 
+    logging.debug(f"Run complete at {datetime.datetime.now()}")
+    logging.info(f"Processed {success} successful URLs and {failure} failures.")
 
 
 if __name__ == "__main__":
