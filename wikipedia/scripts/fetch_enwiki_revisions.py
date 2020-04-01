@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!yusr/bin/env python3
 
 ###############################################################################
 #
@@ -44,8 +44,6 @@ def main():
         yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
         query_date = yesterday.strftime("%Y%m%d")
 
-    query_data  = query_date + "00" #requires specifying hours
-
     #handle -L
     loglevel_mapping = { 'debug' : logging.DEBUG,
                          'info' : logging.INFO,
@@ -73,7 +71,7 @@ def main():
     logging.info(f"Last commit: {export_git_hash}")
 
     json_output_filename = os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{query_date}.json")
-    tsv_output_filename =  os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{query_data}.tsv")
+    tsv_output_filename =  os.path.join(output_path, f"digobs_covid19-wikipedia-enwiki_revisions-{query_date}.tsv")
     
     api_session = api.Session("https://en.wikipedia.org/w/api.php")
 

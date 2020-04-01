@@ -47,8 +47,6 @@ def main():
         yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
         queryDate = yesterday.strftime("%Y%m%d")
 
-    queryDate = queryDate + "00" #requires specifying hours
-
     #handle -L
     loglevel_mapping = { 'debug' : logging.DEBUG,
                          'info' : logging.INFO,
@@ -92,7 +90,7 @@ def main():
         #2 Repeatedly call the API with that list of names
         for a in articleList:
             a = a.strip("\"\n") #destringify
-            url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}/{queryDate}"
+            url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{queryDate}00/{queryDate}00"
 
             response = requests.get(url)
             if response.ok:
