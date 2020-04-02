@@ -3,11 +3,11 @@
 TZ="UTC"
 date_string=$(date +%Y%m%d)
 
-./wikipedia/scripts/wikiproject_scraper.py 2> >(tee wikipedia/logs/enwp-wikiproject_scraper-${date_string}.log)
+view_log="enwp-daily_views-${date_string}.log"
+./wikipedia/scripts/wikiproject_scraper.py 2> >(tee wikipedia/logs/{$view_log})
 
 # get the list of files
-view_log="enwp-daily_views-${date_string}.log"
-./wikipedia/scripts/fetch_enwiki_daily_views.py 2> >(tee wikipedia/logs/${view_log})
+./wikipedia/scripts/fetch_enwiki_daily_views.py 2> >(tee -a wikipedia/logs/${view_log})
 mv wikipedia/logs/${view_log} /var/www/covid19/wikipedia/logs/${view_log}
 mv wikipedia/data/digobs_covid19-wikipedia-enwiki_dailyviews-${date_string}.tsv /var/www/covid19/wikipedia/
 

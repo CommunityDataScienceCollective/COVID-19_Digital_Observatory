@@ -3,10 +3,10 @@
 TZ="UTC"
 date_string=$(date +%Y%m%d)
 
-./wikipedia/scripts/wikiproject_scraper.py 2> >(tee wikipedia/logs/enwp-wikiproject_scraper-${date_string}.log)
-
 revs_log="enwp-revisions-${date_string}.log"
-./wikipedia/scripts/fetch_enwiki_revisions.py 2> >(tee wikipedia/logs/${rev_log})
+./wikipedia/scripts/wikiproject_scraper.py 2> >(tee wikipedia/logs/${revs_log})
+
+./wikipedia/scripts/fetch_enwiki_revisions.py 2> >(tee -a wikipedia/logs/${revs_log})
 mv wikipedia/logs/${revs_log} /var/www/covid19/wikipedia/logs/
 
 revs_tsv="digobs_covid19-wikipedia-enwiki_revisions-${date_string}.tsv"
