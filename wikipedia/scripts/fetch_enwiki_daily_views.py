@@ -58,8 +58,8 @@ def main():
     logging.info(f"Last commit: {digobs.git_hash()}")
 
     #1 Load up the list of article names
-    j_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{export_date}.json")
-    t_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{export_date}.tsv")
+    j_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{query_date}.json")
+    t_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{query_date}.tsv")
 
     with open(articleFile, 'r') as infile:
         articleList = list(map(str.strip, infile))
@@ -82,6 +82,7 @@ def main():
             else:
                 failure = failure + 1
                 logging.warning(f"Failure: {response.status_code} from {url}")
+                continue
 
             # start writing the CSV File if it doesn't exist yet
             try:
