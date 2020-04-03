@@ -4,33 +4,22 @@
 ### Minimal example analysis file using pageview data
 
 library(tidyverse)
-library(ggplot2)
 library(scales)
 
-### Import and cleanup data
+### Import and cleanup one datafile from the observatory
 
 DataURL <-
-    url("https://github.com/CommunityDataScienceCollective/COVID-19_Digital_Observatory/raw/master/wikipedia_views/data/dailyviews2020032600.tsv")
+    url("https://covid19.communitydata.science/datasets/wikipedia/digobs_covid19-wikipedia-enwiki_dailyviews-20200101.tsv")
 
 views <-
     read.table(DataURL, sep="\t", header=TRUE, stringsAsFactors=FALSE) 
-
-### Alternatively, uncomment and run if working locally with full git
-### tree
-###
-### Identify data source directory and file
-## DataDir <- ("../data/")
-## DataFile <- ("dailyviews2020032600.tsv")
-
-## related.searches.top <- read.table(paste(DataDir,DataFile, sep=""),
-##                                   sep="\t", header=TRUE,
-##                                   stringsAsFactors=FALSE)
 
 ### Cleanup and do the grouping with functions from the Tidyverse
 ### (see https://www.tidyverse.org for more info)
 
 views <- views[,c("article", "project", "timestamp", "views")]
-views$timestamp <- factor(views$timestamp)
+views$timestamp <- fct_explicit_na(as.character(views$timestamp))
+
 
 ### Sorts and groups at the same time
 views.by.proj.date <- arrange(group_by(views, project, timestamp),
