@@ -1,110 +1,85 @@
 #!/usr/bin/env python3
-
-###############################################################################
-#
-# This script assumes the presence of the COVID-19 repo.
-# 
-# It (1) reads in the article list and then (2) calls the Wikimedia API to 
-# fetch view information for each article. Output is to (3) JSON and TSV.
-#
-###############################################################################
-
-import sys
-import requests
 import argparse
-import json
-import time
-import os.path
-import datetime
+import sqlite3
+import requests
+from datetime import datetime, timedelta
 import logging
-from csv import DictWriter
 import digobs
-#import feather #TBD
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Call the views API to collect Wikipedia view data.')
-    parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia/data", type=str)
-    parser.add_argument('-i', '--article_file', help='File listing article names', default="wikipedia/resources/enwp_wikiproject_covid19_articles.txt", type=str)
-    parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format.', type=str)
-    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=digobs.get_loglevel), 
-    parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=str), 
-    args = parser.parse_args()
-    return(args)
-
-def main():
-
-    args = parse_args()
-
-    outputPath = args.output_folder
-    articleFile = args.article_file
-
-    #handle -d
-    if args.query_date:
-        query_date = args.query_date
-    else:
-        yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
-        query_date = yesterday.strftime("%Y%m%d")
-
-    #handle -W
-    if args.logging_destination:
-        logging.basicConfig(filename=args.logging_destination, filemode='a', level=args.logging_level)
-    else:
-        logging.basicConfig(level=args.logging_level)
-
-    export_time = str(datetime.datetime.now())
-    export_date = datetime.datetime.today().strftime("%Y%m%d")
-
-    logging.info(f"Starting run at {export_time}")
-    logging.info(f"Last commit: {digobs.git_hash()}")
-
-    #1 Load up the list of article names
-    j_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{query_date}.json")
-    t_outfilename = os.path.join(outputPath, f"digobs_covid19-wikipedia-enwiki_dailyviews-{query_date}.tsv")
-
-    with open(articleFile, 'r') as infile:
-        articleList = list(map(str.strip, infile))
-
-    success = 0 #for logging how many work/fail
-    failure = 0 
-
-    #3 Save results as a JSON and TSV
-    with open(j_outfilename, 'w') as j_outfile, \
-         open(t_outfilename, 'w') as t_outfile:
-
-        #2 Repeatedly call the API with that list of names
-        for a in articleList:
-            url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{query_date}00/{query_date}00"
-
-            response = requests.get(url)
-            if response.ok:
-                jd = response.json()["items"][0]
-                success = success + 1
-            else:
-                failure = failure + 1
-                logging.warning(f"Failure: {response.status_code} from {url}")
-                continue
-
-            # start writing the CSV File if it doesn't exist yet
-            try:
-                dw
-            except NameError:
-                dw = DictWriter(t_outfile, sorted(jd.keys()), delimiter='\t')
-                dw.writeheader()
-
-            logging.debug(f"printing data: {jd}")
-
-            # write out the line of the json file
-            print(json.dumps(jd), file=j_outfile)
-
-            # write out of the csv file
-            dw.writerow(jd)
-
-    # f_Out = outputPath + "dailyviews" + query_date + ".feather"
-    # read the json back in and make a feather file? 
-    logging.debug(f"Run complete at {datetime.datetime.now()}")
-    logging.info(f"Processed {success} successful URLs and {failure} failures.")
-
+from os import path, mkdir
+from functools import partial
+from itertools import chain
 
 if __name__ == "__main__":
 
-    main()
+    parser = argparse.ArgumentParser(description="Get a list of pages related to COVID19, pandemic, and SARS-COV2 virus related entities.")
+    parser.add_argument('-o', '--output_folder', help='Where to save output', default="wikipedia/data", type=str)
+    parser.add_argument('-L', '--logging_level', help='Logging level. Options are debug, info, warning, error, critical. Default: info.', default='info', type=digobs.get_loglevel)
+    parser.add_argument('-W', '--logging_destination', help='Logging destination file. (default: standard error)', type=argparse.FileType('a'))
+    parser.add_argument('-d', '--query_date', help='Date if not yesterday, in YYYYMMDD format.', type=lambda s: datetime.strptime(s, "%Y%m%d"))
+
+    parser.add_argument('-i', '--input_file', help="Input a file of page names from the English Wikiproject.", type=argparse.FileType('r'), default='./wikipedia/resources/enwp_wikiproject_covid19_articles.txt')
+
+    parser.add_argument('-b', '--input_db', help="Input a path to a sqlite3 database from the real-time-covid-tracker project", type = sqlite3.connect, default='real-time-wiki-covid-tracker/AllWikidataItems.sqlite')
+
+    args = parser.parse_args()
+    conn = args.input_db
+    conn.row_factory = sqlite3.Row
+
+    #handle -d
+    if args.query_date:
+        query_date = args.query_date.strftime("%Y%m%d")
+    else:
+        yesterday = datetime.today() - timedelta(days=1)
+        query_date = yesterday.strftime("%Y%m%d")
+
+    digobs.init_logging(args)
+
+    logging.info(f"Destructively outputting results to {args.output_folder}")
+
+    #1 Load up the list of article names
+
+    logging.info("loading info from database")
+    projects = [row['project'] for row in conn.execute("SELECT DISTINCT project from pagesPerProjectTable;").fetchall()]
+
+    successes = 0
+    failures = 0
+
+    for project in projects:
+        project_folder = path.join(args.output_folder, project)
+        if not path.exists(project.folder):
+            mkdir(project_folder)
+
+        dump_folder = path.join(projct.folder, export_date)
+        if not path.exists(dump_folder):
+            mkdir(dump_folder)
+
+        logging.info(f"Getting page views for {project}")
+        rows = conn.execute(f"SELECT DISTINCT page from pagesPerProjectTable WHERE project='{project}';").fetchall()
+        pages = (row['page'] for row in rows)
+
+        # special case for english, we have a wikiproject input file
+        if project == "en.wikipedia":
+            pages = chain(pages, map(str.strip,args.input_file))
+
+        call_view_api = partial(digobs.call_view_api, project=project, query_date = query_date)
+
+        responses = map(call_view_api, pages)
+        
+        j_outfilename = path.join(j_output_folder, f"digobs_covid19_{project}_dailyviews-{query_date}.json")
+        t_outfilename = path.join(t_output_folder, f"digobs_covid19_{project}_dailyviews-{query_date}.tsv")
+
+        with open(j_outfilename, 'w') as j_outfile, \
+             open(t_outfilename, 'w') as t_outfile:
+
+            proj_successes, proj_failures = digobs.process_view_responses(responses, j_outfile, t_outfile, logging)
+        logging.info(f"(Processed {proj_successes} successes and {proj_failures} for {project}")
+        successes = proj_successes + successes
+        failures = proj_failures + failures
+
+    conn.close()
+    # f_Out = outputPath + "dailyviews" + query_date + ".feather"
+    # read the json back in and make a feather file? 
+    logging.debug(f"Run complete at {datetime.now()}")
+    logging.info(f"Processed {successes} successful URLs and {failures} failures.")
+
+        
