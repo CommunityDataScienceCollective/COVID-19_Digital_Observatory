@@ -1,5 +1,8 @@
 #!/bin/bash -x
 
+WORKING_DIR="/home/SOC.NORTHWESTERN.EDU/bmh1867/covid19"
+cd $WORKING_DIR
+
 TZ="UTC"
 date_string=$(date +%Y%m%d)
 
@@ -15,3 +18,4 @@ mv wikipedia/data/${revs_tsv} /var/www/covid19/wikipedia
 revs_json="digobs_covid19-wikipedia-enwiki_revisions-${date_string}.json"
 xz wikipedia/data/${revs_json}
 mv wikipedia/data/${revs_json}.xz /var/www/covid19/wikipedia
+
