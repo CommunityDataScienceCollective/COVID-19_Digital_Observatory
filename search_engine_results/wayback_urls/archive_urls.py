@@ -12,6 +12,7 @@ import logging
 import urllib.parse
 import csv
 import datetime
+from urllib import HTTPError
 
 
 ENDPT = 'https://web.archive.org/save/'
@@ -42,7 +43,7 @@ def main():
                 # Just put them into the job_id_tuples
                 job_id_tuples.append((url, job_id))
             else:
-                print(f'{url} was in completed')
+                logging.debug(f'{url} was in completed')
 
 
 
@@ -55,6 +56,10 @@ def main():
                 logging.warning(f'{url} with job id {job_id} failed with a ConnectionError')
             except TypeError:
                 logging.warning(f'{url} with job id {job_id} did not get a WB URL')
+            except HTTPError as e:
+                logging.warning(f'{url} with job id {job_id} failed with an uncaught HTTP Error: {e}')
+            except Exception as e:
+                logging.warning(f'{url} with job id {job_id} failed with an uncaught Exception: {e}')
 
 
     completed_urls = get_completed(args.o, time_string = IF_NOT_ARCHIVED_WITHIN)
@@ -65,9 +70,13 @@ def main():
 
     with open(args.o, 'a') as out_file:
         out = csv.writer(out_file)
-        job_id_tuples = [] # Stores which urls need to be retrieved (populated by get_job_ids)
-        get_job_ids(query_urls, capture_outlinks = 1)
-        get_wayback_urls(out)
+        logging.info("Now retrieving query urls")
+        for q_chunk in chunk_list(query_urls, CHUNK_SIZE):
+            job_id_tuples = [] # Stores which urls need to be retrieved (populated by get_job_ids)
+            get_job_ids(q_chunk, capture_outlinks = 1)
+            get_wayback_urls(out)
+
+        logging.info("Now retrieving link urls")
         for chunk in chunk_list(link_urls, CHUNK_SIZE):
             job_id_tuples = []
             get_job_ids(chunk, capture_outlinks = 0)
@@ -117,7 +126,7 @@ def urlencode_url(url):
     return requests.utils.requote_uri(urllib.parse.unquote_plus(url))
 
 def archive_url(url,
-                wait = 2,
+                wait = 6,
                 capture_outlinks = 0 # Whether to capture outlinks (default is no)
                 ):
 
@@ -136,7 +145,7 @@ def archive_url(url,
         return archive_url(url = url,
                            wait = wait * 1.2, 
                            capture_outlinks = capture_outlinks)
-    if r.status_code in [104,502,503,504,443,401]:
+    if r.status_code in [104,401,404,443,502,503,504]:
         logging.warning(url)
         logging.warning(r.text)
         if r.status_code in [104, 401, 443]:
@@ -157,8 +166,8 @@ def archive_url(url,
 def get_wayback_url(job_id):
 
     def call_status_url(
-                         wait = 2, # Initial wait time
-                         max_wait = 9 # Stop when wait time between calls hits max_wait
+                         wait = 6, # Initial wait time
+                         max_wait = 12 # Stop when wait time between calls hits max_wait
                         ):
         '''Helper function to handle the call to the status API'''
         if job_id is None:
@@ -186,8 +195,11 @@ def get_wayback_url(job_id):
             logging.info(f'Hit rate limit, now waiting for {wait} seconds')
             time.sleep(wait)
             return call_status_url(wait = wait * 1.2) # Backoff
-        if s.status_code in [104,502,503,504,443,401]:
-            # These likely mean something's wrong; only try a few times
+        if s.status_code in [104,401,404,443,502,503,504]:
+        # These likely mean something's wrong; wait and then try again
+            if r.status_code in [104, 401, 443]:
+                logging.warning(f'104, 401, or 443 received when archiving {url}. Giving up.')
+                return None
             logging.warning('443, 502, 503, or 504 status received; waiting 30 seconds')
             logging.warning(s.text)
             time.sleep(30)

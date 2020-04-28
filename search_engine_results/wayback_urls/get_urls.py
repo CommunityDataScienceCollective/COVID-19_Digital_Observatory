@@ -63,7 +63,7 @@ def get_urls_from_files(files,
             domain = get_domain(query_url)
         else:
             domain = None
-        cache_regex = r'https://webcache.googleusercontent.com|https://cc.bingj.com'
+        cache_regex = r'https?://webcache.googleusercontent.com|https?://cc.bingj.com'
 
         result = set()
         for url in urls:
