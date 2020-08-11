@@ -100,7 +100,26 @@ def main():
 
         for article in article_list:
             logging.info(f"pulling revisions for: {article}")
-            for rev in get_revisions_for_page(article):
+            
+            # try to grab the code 10 times, sleeping for one minute each time
+            tries = 0
+            while True:
+                try:
+                    revisions = get_revisions_for_page(article)
+                    logging.debug(f"successfully received revisions for: {article}")
+                    break
+                except:
+                    if tries > 10:
+                        logging.critical(f"giving up after 10 tries to get {article}")
+                        raise
+                    else:
+                        logging.warning(f"socket.timeout from {article}")
+                        logging.warning(f"sleeping 60 seconds before retrying")
+                        tries = tries + 1
+                        time.sleep(60)
+                        continue
+            
+            for rev in revisions:
                 logging.debug(f"processing raw revision: {rev}")
 
                 # add export metadata

@@ -74,8 +74,25 @@ def main():
         #2 Repeatedly call the API with that list of names
         for a in articleList:
             url= f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{a}/daily/{query_date}00/{query_date}00"
-
-            response = requests.get(url)
+           
+            # try to grab the code 10 times, sleeping for one minute each time
+            tries = 0
+            while True:
+                try:
+                    response = requests.get(url)
+                    logging.debug(f"Successfully requested data from: {url}")
+                    break
+                except:
+                    if tries > 10:
+                        logging.critical(f"Error: giving up after 10 tries to get {url}")
+                        raise
+                    else:
+                        logging.warning(f"Warning: socket.timeout from {url}")
+                        logging.warning(f"Warning: sleeping 60 seconds before retrying")
+                        tries = tries + 1
+                        time.sleep(60)
+                        continue
+            
             if response.ok:
                 jd = response.json()["items"][0]
                 success = success + 1
