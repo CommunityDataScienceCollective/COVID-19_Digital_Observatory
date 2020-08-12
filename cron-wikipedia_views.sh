@@ -4,7 +4,7 @@ WORKING_DIR="/home/SOC.NORTHWESTERN.EDU/bmh1867/covid19"
 cd $WORKING_DIR
 
 TZ="UTC"
-date_string=${OVERRIDE_DATE_STRING:-$(date +%Y%m%d)}
+date_string=${OVERRIDE_DATE_STRING:-$(date +%Y%m%d -d "yesterday")}
 
 view_log="enwp-daily_views-${date_string}.log"
 ./wikipedia/scripts/wikiproject_scraper.py 2> >(tee wikipedia/logs/${view_log})
