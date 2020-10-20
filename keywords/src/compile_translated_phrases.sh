@@ -14,15 +14,19 @@ python3 wikidata_search.py ../output/intermediate/related_searches_rising.csv ..
 
 echo "Get wikidata items from MGerlach's list."
 #
-python3 find_wikidataitems_listed.py --url https://meta.wikimedia.org/wiki/User:MGerlach_(WMF)/covid_related_pages_reading_sessions --output ../output/intermediate/MGerlach_wikidata_ids.txt
+python3 find_wikidataitems_listed.py --url "https://meta.wikimedia.org/wiki/User:MGerlach_(WMF)/covid_related_pages_reading_sessions" --output ../output/intermediate/$(date '+%Y-%m-%d')_MGerlach_wikidata_ids.txt
 
 # echo "Get wikidata items from Dsaez's list"
 # #https://meta.wikimedia.org/wiki/User:Diego_(WMF)/COVID-19_Pages
 # python3 find_wikidataitems_listed.py --url https://meta.wikimedia.org/wiki/User:Diego_(WMF)/COVID-19_Pages --output ../output/intermediate/Diego_wikidata_ids.txt
 
+echo "Finding translations from Wikidata using sparql"
+python3 wikidata_translations.py  ../output/intermediate/$(date '+%Y-%m-%d')_MGerlach_wikidata_ids.txt --topN 100000 --output ../output/csv/$(date '+%Y-%m-%d')_wikidata_item_labels_MGerlach.csv
 
 echo "Finding translations from Wikidata using sparql"
-python3 wikidata_translations.py  ../output/intermediate/wikidata_search_results_from_gtrends.csv  ../output/intermediate/wikidata_search_results.csv --topN 10 20 --output ../output/csv/$(date '+%Y-%m-%d')_wikidata_item_labels.csv
+python3 wikidata_translations.py  ../output/intermediate/wikidata_search_results_from_gtrends.csv  ../output/intermediate/wikidata_search_results.csv --topN 10 20 --output ../output/csv/$(date '+%Y-%m-%d')_wikidata_item_labels_gtrends.csv
+
+cat ../output/csv/$(date '+%Y-%m-%d')_wikidata_item_labels_MGerlach.csv ../output/csv/$(date '+%Y-%m-%d')_wikidata_item_labels_gtrends.csv > ../output/csv/$(date '+%Y-%m-%d')_wikidata_item_labels.csv
 
 rm latest.csv
 ln -s $(ls -tr | tail -n 1) latest.csv
