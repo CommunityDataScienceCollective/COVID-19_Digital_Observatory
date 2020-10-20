@@ -1,3 +1,6 @@
 [submodule "real-time-wiki-covid-tracker"]
 	path = real-time-wiki-covid-tracker
 	url = https://github.com/digitalTranshumant/real-time-wiki-covid-tracker
+[submodule "cdsc_reddit"]
+	path = cdsc_reddit
+	url = code:cdsc_reddit
