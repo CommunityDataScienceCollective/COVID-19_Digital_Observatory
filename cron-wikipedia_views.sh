@@ -1,4 +1,7 @@
-#!/bin/bash -x
+#!/bin/bash
+
+WORKING_DIR="/home/SOC.NORTHWESTERN.EDU/bmh1867/covid19"
+cd $WORKING_DIR
 
 TZ="UTC"
 date_string=${OVERRIDE_DATE_STRING:-$(date +%Y%m%d)}
