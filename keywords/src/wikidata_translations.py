@@ -26,7 +26,7 @@ def GetAllLabels(in_csvs, outfile, topNs):
         with open(in_csv,'r',newline='') as infile:
             reader = list(csv.DictReader(infile))
             for row in reader:
-                if int(row['search_position']) < topN:
+                if int(row.get('search_position',1)) < topN:
                     yield row["itemid"]
 
     ids = set(chain(* map(lambda in_csv, topN: load_item_ids(in_csv, topN), in_csvs, topNs)))
