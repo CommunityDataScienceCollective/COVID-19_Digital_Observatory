@@ -14,6 +14,7 @@ import logging
 import os.path
 import json
 import datetime
+import time
 
 from requests import Request
 from csv import DictWriter
@@ -100,12 +101,55 @@ def main():
 
         for article in article_list:
             logging.info(f"pulling revisions for: {article}")
-            
+           
             # try to grab the code 10 times, sleeping for one minute each time
             tries = 0
             while True:
                 try:
-                    revisions = get_revisions_for_page(article)
+                    rev_rows = []
+                    for rev in get_revisions_for_page(article):
+                        logging.debug(f"processing raw revision: {rev}")
+
+                        # add export metadata
+                        rev['exported'] = export_info
+
+                        # save the json version of the code
+                        print(json.dumps(rev), file=json_output)
+
+                        # handle missing data
+                        if "sha1" not in rev:
+                            rev["sha1"] = ""
+
+                        if "userhidden" in rev:
+                            rev["user"] = ""
+                            rev["userid"] = ""
+
+                        # recode anon so it's true or false instead of present/missing
+                        if "anon" in rev:
+                            rev["anon"] = True
+                        else:
+                            rev["anon"] = False
+                            
+                        # let's recode "minor" in the same way
+                        if "minor" in rev:
+                            rev["minor"] = True
+                        else:
+                            rev["minor"] = False
+
+                        # add page title information
+                        rev['title'] = rev['page']['title']
+                        rev['pageid'] = rev['page']['pageid']
+                        rev['namespace'] = rev['page']['ns']
+
+                        # construct a URL
+                        rev['url'] = Request('GET', 'https://en.wikipedia.org/w/index.php',
+                                             params={'title' : rev['title'].replace(" ", "_"),
+                                                    'oldid' : rev['revid']}).prepare().url
+
+                        rev['export_timestamp'] = export_time
+                        rev['export_commit'] = digobs.git_hash(short=True)
+
+                        rev_rows.append(rev)
                     logging.debug(f"successfully received revisions for: {article}")
                     break
                 except:
@@ -118,50 +162,10 @@ def main():
                         tries = tries + 1
                         time.sleep(60)
                         continue
-            
-            for rev in revisions:
-                logging.debug(f"processing raw revision: {rev}")
 
-                # add export metadata
-                rev['exported'] = export_info
-
-                # save the json version of the code
-                print(json.dumps(rev), file=json_output)
-
-                # handle missing data
-                if "sha1" not in rev:
-                    rev["sha1"] = ""
-
-                if "userhidden" in rev:
-                    rev["user"] = ""
-                    rev["userid"] = ""
-
-                # recode anon so it's true or false instead of present/missing
-                if "anon" in rev:
-                    rev["anon"] = True
-                else:
-                    rev["anon"] = False
-                    
-                # let's recode "minor" in the same way
-                if "minor" in rev:
-                    rev["minor"] = True
-                else:
-                    rev["minor"] = False
-
-                # add page title information
-                rev['title'] = rev['page']['title']
-                rev['pageid'] = rev['page']['pageid']
-                rev['namespace'] = rev['page']['ns']
-
-                # construct a URL
-                rev['url'] = Request('GET', 'https://en.wikipedia.org/w/index.php',
-                                     params={'title' : rev['title'].replace(" ", "_"),
-                                            'oldid' : rev['revid']}).prepare().url
-
-                rev['export_timestamp'] = export_time
-                rev['export_commit'] = digobs.git_hash(short=True)
-
-                tsv_writer.writerow({k: rev[k] for k in tsv_fields})
+                # print out each of the revisions once we know we have it all 
+                for rev in rev_rows: 
+                    tsv_writer.writerow({k: rev[k] for k in tsv_fields})
 
 if __name__ == "__main__":
     main()
