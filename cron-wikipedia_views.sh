@@ -9,11 +9,11 @@ date_string=${OVERRIDE_DATE_STRING:-$(date +%Y%m%d -d "yesterday")}
 view_log="daily_views-${date_string}.log"
 ./wikipedia/scripts/wikiproject_scraper.py 2> >(tee wikipedia/logs/${view_log})
 
-wd_log="wd-page-crawler-${date_string}.log"
-python3 ./real-time-wiki-covid-tracker/PageCrawler.py -a "./wikipedia/resources/enwp_wikiproject_covid19_articles.txt" 2> >(tee wikipedia/logs/${wd_log})
+#wd_log="wd-page-crawler-${date_string}.log"
+#python3 ./real-time-wiki-covid-tracker/PageCrawler.py -a "./wikipedia/resources/enwp_wikiproject_covid19_articles.txt" 2> >(tee wikipedia/logs/${wd_log})
 
 # get the list of files
-./wikipedia/scripts/fetch_daily_views.py -d "${date_string}" 2> >(tee -a wikipedia/logs/${view_log})
+./wikipedia/scripts/fetch_enwiki_daily_views.py -d "${date_string}" 2> >(tee -a wikipedia/logs/${view_log})
 mv wikipedia/logs/${view_log} /var/www/covid19/wikipedia/logs/${view_log}
 
 cd wikipedia/data
