@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WORKING_DIR="/home/SOC.NORTHWESTERN.EDU/bmh1867/covid19"
+WORKING_DIR="/data/users/bmh1867/covid19"
 cd $WORKING_DIR
 
 TZ="UTC"
