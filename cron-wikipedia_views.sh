@@ -17,12 +17,12 @@ view_log="daily_views-${date_string}.log"
 mv wikipedia/logs/${view_log} /var/www/covid19/wikipedia/logs/${view_log}
 
 cd wikipedia/data
-find */${date_string}/*dailyviews*.tsv | while read line; do
+find digobs_covid19-wikipedia-enwiki_dailyviews-${date_string}.tsv | while read line; do
     mkdir -p /var/www/covid19/wikipedia/$line
     mv $line /var/www/covid19/wikipedia/$line
 done
 
-find */${date_string}/*dailyviews*.json | while read line; do
+find digobs_covid19-wikipedia-enwiki_dailyviews-${date_string}.json | while read line; do
     mkdir -p /var/www/covid19/wikipedia/$line
     mv $line /var/www/covid19/wikipedia/$line
 done
