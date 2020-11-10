@@ -55,44 +55,34 @@ def main():
     logging.info(f"Starting at {export_time} and destructively outputting article list to {outputFile}.")
     logging.info(f"Last commit: {export_git_hash}")
 
-    #1 How many hits to the fcgi?
-    session = requests.Session()
+    def trim_title(title):
+        title = re.sub(r'^Talk:(.*)$', r'\1', title)
+        title = re.sub(r'^(\w+) talk(:.*)$', r'\1\2', title) 
+        return title
 
-    originalURL = "https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi?run=yes&projecta=COVID-19&namespace=&pagename=&quality=&importance=&score=&limit=1000&offset=1&sorta=Importance&sortb=Quality"
-    headURL = "https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi?run=yes&projecta=COVID-19&namespace=&pagename=&quality=&importance=&score=&limit=1000&offset=" 
-    tailURL = "&sorta=Importance&sortb=Quality" #head + offset + tail = original when offset = 1
+    def get_titles_from_json(json):
+        article_names = []
+        for cat in json["query"]["categorymembers"]:
+            article_names.append(trim_title(cat["title"]))
+        return article_names
 
-    # find out how many results we have
-    response = session.get(originalURL)
+    url = "https://en.wikipedia.org/w/api.php"
+    parameters = {'action' : 'query',
+                 'format' : 'json',
+                 'list' : 'categorymembers',
+                 'cmtitle' : 'Category:WikiProject_COVID-19_articles',
+                 'cmlimit' : 500}
 
-    soup = BeautifulSoup(response.text, features="html.parser")
-    nodes = soup.find_all('div', class_="navbox")
-    rx = re.compile("Total results:\D*(\d+)") 
-    m = rx.search(nodes[0].get_text())
-    #print(nodes[0].get_text())
-    numResults = int(m.group(1))
-
-    logging.debug(f"fcgi returned {numResults}")
-    rounds = math.ceil(numResults/1000) 
-
-    #2 Fetch and parse down to just the article names
     articleNames = []
+    while True:
+        rv = requests.get(url, parameters)
+        res_json = rv.json()
+        articleNames.extend(get_titles_from_json(res_json))
 
-    for i in range(1, rounds+1):
-        offset = (i - 1)*1000 + 1 #offset is 1, then 1001, then 2001 
-        url = f"{headURL}{offset}{tailURL}"
-        response = session.get(url)
-        soup = BeautifulSoup(response.text, features="html.parser") #make fresh soup
-        article_rows = soup.find_all('tr', class_="list-odd") #just the odds first
-        for row in article_rows:
-            a = row.find('a')
-            articleNames.append(a.get_text())
-        article_rows = soup.find_all('tr', class_="list-even") #now the events
-        for row in article_rows:
-            a = row.find('a')
-            articleNames.append(a.get_text())
-
-    #3 Saves the list to a file
+        if 'continue' in res_json:
+            parameters.update(res_json['continue'])
+        else:
+            break
 
     with open(outputFile, 'w') as f:
         f.write('\n'.join(articleNames)+'\n')
@@ -100,6 +90,5 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
 
