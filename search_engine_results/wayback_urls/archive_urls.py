@@ -12,7 +12,7 @@ import logging
 import urllib.parse
 import csv
 import datetime
-from urllib import HTTPError
+from urllib.error import HTTPError
 
 
 ENDPT = 'https://web.archive.org/save/'
@@ -23,7 +23,9 @@ HEADERS = {'Accept':'application/json',
            'User-Agent': UA_STRING,
            'Authorization': f'LOW {ACCESS_KEY}:{SECRET_KEY}'}
 IF_NOT_ARCHIVED_WITHIN = '20h' # If an archive has been made in this long, don't make another one
-CHUNK_SIZE = 15 # Get this many URLS at a time
+CHUNK_SIZE = 25 # Get this many URLS at a time
+QUERY_OUTLINKS = 0 # Whether to capture outlinks for query URLS (1 = yes, 0 = no)
+# Setting this to 0 for now, since Google is giving 429s.
 
 
 
@@ -33,7 +35,7 @@ def main():
     parser.add_argument('-o', help='Location to save wayback URL file')
     args = parser.parse_args()
 
-
+    print(f"Starting at {datetime.datetime.now()}")
 
     def get_job_ids(urls, capture_outlinks):
         for url in urls:
@@ -73,7 +75,7 @@ def main():
         logging.info("Now retrieving query urls")
         for q_chunk in chunk_list(query_urls, CHUNK_SIZE):
             job_id_tuples = [] # Stores which urls need to be retrieved (populated by get_job_ids)
-            get_job_ids(q_chunk, capture_outlinks = 1)
+            get_job_ids(q_chunk, capture_outlinks = QUERY_OUTLINKS)
             get_wayback_urls(out)
 
         logging.info("Now retrieving link urls")
@@ -82,6 +84,7 @@ def main():
             get_job_ids(chunk, capture_outlinks = 0)
             get_wayback_urls(out)
 
+    print(f"Ending at {datetime.datetime.now()}")
 
 def chunk_list(l, size):
     for i in range(0, len(l), size):
@@ -101,7 +104,6 @@ def write_wayback(f, url, wayback_url, timestamp):
     '''Takes a CSV writer object, a url, and wayback_url, and writes
     it out'''
     f.writerow([timestamp,url,wayback_url])
-
 
 
 def get_completed(csv_file, time_string):
@@ -130,7 +132,7 @@ def archive_url(url,
                 capture_outlinks = 0 # Whether to capture outlinks (default is no)
                 ):
 
-    logging.info(f'Sending archive call for {url}')
+    logging.debug(f'Sending archive call for {url}')
     payload = {'url': url,
               'if_not_archived_within' : IF_NOT_ARCHIVED_WITHIN,
               #'capture_screenshot': capture_screenshot,
@@ -140,7 +142,7 @@ def archive_url(url,
     logging.debug(r.content)
 
     if r.status_code == 429:
-        logging.info(f'Hit rate limit, now waiting for {wait:.2f} seconds')
+        logging.debug(f'Hit rate limit, now waiting for {wait:.2f} seconds')
         time.sleep(wait)
         return archive_url(url = url,
                            wait = wait * 1.2, 
@@ -165,7 +167,7 @@ def archive_url(url,
 
 def get_wayback_url(job_id):
 
-    def call_status_url(
+    def call_status_url(job_id,
                          wait = 6, # Initial wait time
                          max_wait = 12 # Stop when wait time between calls hits max_wait
                         ):
@@ -180,37 +182,47 @@ def get_wayback_url(job_id):
                     logging.debug(s_json)
                     logging.warning(f"The call to get the status of job id {job_id} failed. Skipping")
                     return None
-                logging.info(f'Pending, now waiting for {wait:.2f} seconds')
+                logging.debug(f'Pending, now waiting for {wait:.2f} seconds')
                 time.sleep(wait)
-                return call_status_url(wait = wait + 1)
+                return call_status_url(job_id, wait = wait + 1)
             if s_json['status'] == 'success':
                 return s_json
             if s_json['status'] == 'error':
+                # Sometimes we get 429s from Google; if that's the case, then wait 30 seconds before trying again
+                if re.search('HTTP status=429', s_json['message']):
+                    url = re.search('http\S*', s_json['message'])
+                    if url:
+                        url = url.group()
+                        logging.warning(f"Wayback received a 429 when trying to archive {url}. Skipping this one and waiting 30 seconds before trying again")
+                        time.sleep(30)
+                        return None
+                    else:
+                        return None
                 logging.error('Could not get status, with error: {}'.format(s_json["message"]))
                 return None
             else:
                 logging.warning(s_json)
                 raise ValueError("Status was unexpected")
         if s.status_code == 429:
-            logging.info(f'Hit rate limit, now waiting for {wait} seconds')
+            logging.debug(f'Hit rate limit, now waiting for {wait} seconds')
             time.sleep(wait)
-            return call_status_url(wait = wait * 1.2) # Backoff
+            return call_status_url(job_id, wait = wait * 1.2) # Backoff
         if s.status_code in [104,401,404,443,502,503,504]:
         # These likely mean something's wrong; wait and then try again
-            if r.status_code in [104, 401, 443]:
+            if s.status_code in [104, 401, 443]:
                 logging.warning(f'104, 401, or 443 received when archiving {url}. Giving up.')
                 return None
             logging.warning('443, 502, 503, or 504 status received; waiting 30 seconds')
             logging.warning(s.text)
             time.sleep(30)
-            return call_status_url()
+            return call_status_url(job_id)
         else:
             s.raise_for_status()
 
-    logging.info(f"Getting wayback URL for job id {job_id}")
-    s_json = call_status_url()
+    logging.debug(f"Getting wayback URL for job id {job_id}")
+    s_json = call_status_url(job_id)
     if s_json is None:
-        return None
+        return s_json
     try:
         wayback_url = 'http://web.archive.org/web/{}/{}'.format(s_json['timestamp'],
                                                          s_json['original_url'])

@@ -37,12 +37,10 @@ def write_wayback_to_file(filename, out_dir, wayback_dict):
             wayback_url = wayback_dict[query_url]
             j_obj['wayback_url'] = wayback_url
         except KeyError:
-            logging.error(f"Should have an entry for {query_url}")
-            logging.error(wayback_dict.keys())
+            logging.warning(f"Should have an entry for {query_url}")
             j_obj['wayback_url'] = ''
         for link_obj in j_obj['linkElements']:
             link_url = urlencode_url(link_obj['href'])
-            if link_url == '':
             try:
                 wayback_url = wayback_dict[link_url]
                 link_obj['wayback_url'] = wayback_url
@@ -81,6 +79,6 @@ def urlencode_url(url):
     return requests.utils.requote_uri(urllib.parse.unquote_plus(url))
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.WARNING)
     main()
 

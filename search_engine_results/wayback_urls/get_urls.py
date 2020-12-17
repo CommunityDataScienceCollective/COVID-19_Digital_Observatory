@@ -12,7 +12,10 @@ import logging
 import urllib.parse
 import csv
 import datetime
+from collections import Counter
 
+SKIPPED_COUNT = 3 # Even when we filter self-links (e.g., links to bing from a bing query), we may want to keep those which
+# appear across multiple queries. This count says how often a self-link URL has to appear for us to archive it.
 
 def main():
     parser = argparse.ArgumentParser(description='Gets URLs to archive from SERP metadata files')
@@ -55,8 +58,7 @@ def get_urls_from_files(files,
         https://cc.bingj
         2. Filters out those which are in the completed_urls dictionary
         3. (Optionally) Identifies URLs which have the same domain as the query URL.
-        Checks the skipped_urls list to see if the URL already appears there. If so, we assume
-        that we want it archived and move it from skipped to the to_archive list
+        Adds them to the skipped_urls list, which we process at the end
         4. Filters out URLs that appear more than once in this list
         '''
         if ignore_self_links:
@@ -75,19 +77,12 @@ def get_urls_from_files(files,
                     continue
 
             if ignore_self_links and re.match(f'https?://\w*\.?{domain}', url):
-                # If it matches, check if it's in skipped URLs
-                # If so, remove it from there, and add it to the to_archive list
-                if url in skipped_urls:
-                    result.add(url)
-                    skipped_urls.remove(url)
-                # Else, add it to the skipped urls (and skip it)
-                else:
-                    skipped_urls.add(url)
+                skipped_urls.append(url)
             else:
                 result.add(url)
         return result
 
-    skipped_urls = set()
+    skipped_urls = []
     to_archive = {}
     for fn in files:
         q_url, link_urls = get_urls(fn)
@@ -97,7 +92,21 @@ def get_urls_from_files(files,
             # then don't overwrite
             if url not in to_archive:
                 to_archive[url] = 'link'
+
+    skipped_to_keep = filter_skipped_urls(skipped_urls, SKIPPED_COUNT)
+    for url in skipped_to_keep:
+        if url not in to_archive:
+            to_archive[url] = 'link'
+
     write_urls(to_archive, output_file)
+
+
+def filter_skipped_urls(urls, n): # n is the number of times a URL must appear in order to be archived
+    result = set()
+    for url, count in Counter(urls).items():
+        if count >= n:
+            result.add(url)
+    return result
 
 
 def write_urls(url_dict, fn):
